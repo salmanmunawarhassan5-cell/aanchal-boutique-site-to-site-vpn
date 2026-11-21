@@ -77,3 +77,18 @@ PING 192.168.20.1 (192.168.20.1) 56(84) bytes of data.
 rtt min/avg/max/mdev = 0.370/0.397/0.440/0.027 ms
 ```
 
+
+---
+
+### Formal IP Addressing Table
+
+| Device | Interface | IP | Mask | Gateway |
+| :--- | :--- | :--- | :--- | :--- |
+| `OPNsense-FW-SiteA` | `WAN` | `10.0.2.15` | `/24` | `10.0.2.2` |
+| `OPNsense-FW-SiteA` | `LAN` | `192.168.10.1` | `/24` | `none` |
+| `Ubuntu-Client-SiteA` | `NIC` | `192.168.10.10` | `/24` | `192.168.10.1` |
+| `OPNsense-FW-SiteB` | `WAN` | `10.0.2.16` | `/24` | `10.0.2.2` |
+| `OPNsense-FW-SiteB` | `LAN` | `192.168.20.1` | `/24` | `none` |
+| `Ubuntu-Client-SiteB` | `NIC` | `192.168.20.10` | `/24` | `192.168.20.1` |
+
+---.
