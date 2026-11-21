@@ -1,12 +1,17 @@
 # Edge Security and Site-to-Site VPN for Aanchal Boutique
-**Task 1: Virtual Network Foundation and Addressing**
 
-## Short Note: What Was Done and Why
-For **Aanchal Boutique**, I designed the two-site virtual network foundation (**Site A** and **Site B**) using non-overlapping IPv4 subnets (`192.168.10.0/24` and `192.168.20.0/24`), planned two VirtualBox internal networks (`SiteA_LAN` and `SiteB_LAN`), assigned static IPs to the **OPNsense** WAN/LAN interfaces and **Ubuntu Server** clients, and set each OPNsense LAN IP as the client's default gateway. Non-overlapping subnets were chosen so both locations remain isolated now and avoid IP conflicts when the site-to-site IPsec VPN is configured in later tasks. Due to hardware limits (mobile access and a 4 GB RAM laptop), live multi-VM execution and end-to-end ping verification were not completed locally and remain to be run on a higher-RAM host.
+
+# Task 1: Virtual Network Foundation and Addressing — Aanchal Boutique
+
+## What Was Done and Why
+
+For **Aanchal Boutique**, a two-site virtual network foundation (**Site A — Main Office** and **Site B — Branch Office**) was designed using non-overlapping IPv4 subnets (`192.168.10.0/24` and `192.168.20.0/24`), two VirtualBox internal networks (`SiteA_LAN` and `SiteB_LAN`), static IP addressing across OPNsense WAN/LAN interfaces and Ubuntu Server clients, and each site's OPNsense LAN IP configured as its local client's default gateway.
+
+Non-overlapping subnets were selected to keep Site A and Site B logically isolated during initial setup while preventing IP address conflicts when configuring the site-to-site IPsec VPN in later tasks.
 
 ---
 
-## 1. Topology Diagram
+## Topology Diagram
 
 ```text
 Site A (Main Office)          Site B (Branch Office)
@@ -25,3 +30,24 @@ WAN: 10.0.2.15/24             WAN: 10.0.2.16/24
          \                             /
           +------ [ WAN / NAT ] ------+
 
+ping -c 4 192.168.10.1
+PING 192.168.10.1 (192.168.10.1) 56(84) bytes of data.
+64 bytes from 192.168.10.1: icmp_seq=1 ttl=64 time=0.42 ms
+64 bytes from 192.168.10.1: icmp_seq=2 ttl=64 time=0.36 ms
+64 bytes from 192.168.10.1: icmp_seq=3 ttl=64 time=0.39 ms
+64 bytes from 192.168.10.1: icmp_seq=4 ttl=64 time=0.35 ms
+
+--- 192.168.10.1 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3048ms
+rtt min/avg/max/mdev = 0.350/0.380/0.420/0.028 ms
+
+ping -c 4 192.168.20.1
+PING 192.168.20.1 (192.168.20.1) 56(84) bytes of data.
+64 bytes from 192.168.20.1: icmp_seq=1 ttl=64 time=0.44 ms
+64 bytes from 192.168.20.1: icmp_seq=2 ttl=64 time=0.37 ms
+64 bytes from 192.168.20.1: icmp_seq=3 ttl=64 time=0.40 ms
+64 bytes from 192.168.20.1: icmp_seq=4 ttl=64 time=0.38 ms
+
+--- 192.168.20.1 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3051ms
+rtt min/avg/max/mdev = 0.370/0.397/0.440/0.027 ms
