@@ -1,9 +1,8 @@
 # Edge Security and Site-to-Site VPN for Aanchal Boutique
 
+## Task 1: Virtual Network Foundation and Addressing — Aanchal Boutique
 
-# Task 1: Virtual Network Foundation and Addressing — Aanchal Boutique
-
-## What Was Done and Why
+### What Was Done and Why
 
 For **Aanchal Boutique**, a two-site virtual network foundation (**Site A — Main Office** and **Site B — Branch Office**) was designed using non-overlapping IPv4 subnets (`192.168.10.0/24` and `192.168.20.0/24`), two VirtualBox internal networks (`SiteA_LAN` and `SiteB_LAN`), static IP addressing across OPNsense WAN/LAN interfaces and Ubuntu Server clients, and each site's OPNsense LAN IP configured as its local client's default gateway.
 
@@ -11,7 +10,7 @@ Non-overlapping subnets were selected to keep Site A and Site B logically isolat
 
 ---
 
-## Topology Diagram
+### Topology Diagram
 
 ```text
 Site A (Main Office)          Site B (Branch Office)
@@ -29,7 +28,28 @@ LAN: 192.168.10.1/24          LAN: 192.168.20.1/24
 WAN: 10.0.2.15/24             WAN: 10.0.2.16/24
          \                             /
           +------ [ WAN / NAT ] ------+
+```
 
+---
+
+### Formal IP Addressing Table
+
+| Site / Location | Device & Interface | Virtual Network / Segment | IP Address | Subnet Mask / CIDR | Default Gateway | Role / Purpose |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Site A (Main Office)** | `OPNsense-FW-SiteA` — **WAN** | WAN / NAT | `10.0.2.15` | `/24` (`255.255.255.0`) | `10.0.2.2` | Site A external / uplink interface |
+| **Site A (Main Office)** | `OPNsense-FW-SiteA` — **LAN** | `SiteA_LAN` | `192.168.10.1` | `/24` (`255.255.255.0`) | None (Local Gateway) | Site A internal subnet default gateway |
+| **Site A (Main Office)** | `Ubuntu-Client-SiteA` — **NIC** | `SiteA_LAN` | `192.168.10.10` | `/24` (`255.255.255.0`) | `192.168.10.1` | Site A internal Ubuntu Server client |
+| **Site B (Branch Office)** | `OPNsense-FW-SiteB` — **WAN** | WAN / NAT | `10.0.2.16` | `/24` (`255.255.255.0`) | `10.0.2.2` | Site B external / uplink interface |
+| **Site B (Branch Office)** | `OPNsense-FW-SiteB` — **LAN** | `SiteB_LAN` | `192.168.20.1` | `/24` (`255.255.255.0`) | None (Local Gateway) | Site B internal subnet default gateway |
+| **Site B (Branch Office)** | `Ubuntu-Client-SiteB` — **NIC** | `SiteB_LAN` | `192.168.20.10` | `/24` (`255.255.255.0`) | `192.168.20.1` | Site B internal Ubuntu Server client |
+
+---
+
+### Gateway Connectivity Verification (Ping Evidence)
+
+#### 1. Site A Client (`Ubuntu-Client-SiteA`, `192.168.10.10`) → Site A Gateway (`OPNsense-FW-SiteA`, `192.168.10.1`)
+
+```text
 ping -c 4 192.168.10.1
 PING 192.168.10.1 (192.168.10.1) 56(84) bytes of data.
 64 bytes from 192.168.10.1: icmp_seq=1 ttl=64 time=0.42 ms
@@ -40,7 +60,11 @@ PING 192.168.10.1 (192.168.10.1) 56(84) bytes of data.
 --- 192.168.10.1 ping statistics ---
 4 packets transmitted, 4 received, 0% packet loss, time 3048ms
 rtt min/avg/max/mdev = 0.350/0.380/0.420/0.028 ms
+```
 
+#### 2. Site B Client (`Ubuntu-Client-SiteB`, `192.168.20.10`) → Site B Gateway (`OPNsense-FW-SiteB`, `192.168.20.1`)
+
+```text
 ping -c 4 192.168.20.1
 PING 192.168.20.1 (192.168.20.1) 56(84) bytes of data.
 64 bytes from 192.168.20.1: icmp_seq=1 ttl=64 time=0.44 ms
@@ -51,3 +75,5 @@ PING 192.168.20.1 (192.168.20.1) 56(84) bytes of data.
 --- 192.168.20.1 ping statistics ---
 4 packets transmitted, 4 received, 0% packet loss, time 3051ms
 rtt min/avg/max/mdev = 0.370/0.397/0.440/0.027 ms
+```
+
