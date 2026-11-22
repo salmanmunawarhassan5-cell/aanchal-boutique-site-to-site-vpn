@@ -92,3 +92,21 @@ rtt min/avg/max/mdev = 0.370/0.397/0.440/0.027 ms
 | `Ubuntu-Client-SiteB` | `NIC` | `192.168.20.10` | `/24` | `192.168.20.1` |
 
 ---.
+
+# OPNsense Firewall Hardening Summary - Task 2
+# Scope: Both Edge Firewalls (WAN Default-Deny, LAN Explicit Allow)
+
+[FIREWALL_1_AND_2_WAN]
+- Default Policy: BLOCK / DENY all inbound traffic not explicitly allowed
+- Logging: ENABLED on block rules for audit and troubleshooting
+- External Ping (ICMP) to LAN / Firewall: BLOCKED
+- Unsolicited WAN-to-LAN Sessions: BLOCKED
+
+[FIREWALL_1_AND_2_LAN]
+- Outbound Web Traffic: ALLOW TCP ports 80 and 443 from LAN subnet
+- Name Resolution & Gateway: ALLOW DNS (UDP/TCP 53) and local gateway access as required
+- Management Access: RESTRICTED to authorized admin IP / management subnet only
+
+[VERIFICATION_RESULTS]
+- ICMP Ping from WAN side to LAN test host: Timed out / 100% packet loss
+- Wireshark / Firewall Live View: Confirmed external probe packets dropped and no unauthorized LAN session established
