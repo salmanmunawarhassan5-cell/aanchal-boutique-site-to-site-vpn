@@ -91,22 +91,26 @@ rtt min/avg/max/mdev = 0.370/0.397/0.440/0.027 ms
 | `OPNsense-FW-SiteB` | `LAN` | `192.168.20.1` | `/24` | `none` |
 | `Ubuntu-Client-SiteB` | `NIC` | `192.168.20.10` | `/24` | `192.168.20.1` |
 
----.
+## Task 2: Firewall Hardening & Access Control Policy
 
-# OPNsense Firewall Hardening Summary - Task 2
-# Scope: Both Edge Firewalls (WAN Default-Deny, LAN Explicit Allow)
+### 1. Firewall Rules Configuration
 
-[FIREWALL_1_AND_2_WAN]
-- Default Policy: BLOCK / DENY all inbound traffic not explicitly allowed
-- Logging: ENABLED on block rules for audit and troubleshooting
-- External Ping (ICMP) to LAN / Firewall: BLOCKED
-- Unsolicited WAN-to-LAN Sessions: BLOCKED
+The firewall is configured with a default-deny ingress posture on the WAN interface while permitting essential outbound connectivity and restricted administrative access on the LAN interface.
 
-[FIREWALL_1_AND_2_LAN]
-- Outbound Web Traffic: ALLOW TCP ports 80 and 443 from LAN subnet
-- Name Resolution & Gateway: ALLOW DNS (UDP/TCP 53) and local gateway access as required
-- Management Access: RESTRICTED to authorized admin IP / management subnet only
+| Rule ID / Name | Interface / Direction | Source | Destination | Port / Protocol | Action | Reason |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `WAN-Block-ICMP` | WAN (Inbound) | WAN (`Any`) | LAN / Firewall | ICMP | Block | Prevent external network discovery, host enumeration, and reconnaissance probes. |
+| `WAN-Block-Unsolicited` | WAN (Inbound) | WAN (`Any`) | LAN Subnet | Any | Block | Enforce a default-deny security posture to protect internal LAN hosts from unauthorized external sessions. |
+| `LAN-Allow-Web` | LAN (Outbound) | LAN Subnet | WAN (`Any`) | TCP / 80, 443 | Allow | Enable internal network users to access standard HTTP and HTTPS web resources. |
+| `LAN-Allow-DNS-GW` | LAN (Outbound) | LAN Subnet | DNS / Gateway | UDP/TCP 53 | Allow | Permit domain name resolution and essential local gateway communication. |
+| `LAN-Allow-Mgmt` | LAN / Management | Authorized Admin IP | Firewall GUI / SSH | TCP / 22, 443 | Allow | Restrict firewall management access strictly to authorized administrator workstations. |
 
-[VERIFICATION_RESULTS]
-- ICMP Ping from WAN side to LAN test host: Timed out / 100% packet loss
-- Wireshark / Firewall Live View: Confirmed external probe packets dropped and no unauthorized LAN session established
+---
+
+### 2. Verification & Blocked Traffic Testing
+
+To validate the firewall ruleset and confirm that unauthorized external traffic cannot traverse from WAN to LAN, active probing and packet inspection were performed:
+
+* **Blocked WAN-to-LAN ICMP Ping Test:** Executed an ICMP echo request from the external WAN interface toward an internal LAN test host, resulting in `100% packet loss` (Request timed out). The captured command output is recorded in [`outputs/wan-to-lan-blocked.txt`](outputs/wan-to-lan-blocked.txt).
+* **Packet Capture & Firewall Logs:** Verified via Wireshark and the firewall live view that unsolicited ingress packets on the WAN interface were dropped immediately without establishing any LAN state or session.
+
