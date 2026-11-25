@@ -114,6 +114,7 @@ To validate the firewall ruleset and confirm that unauthorized external traffic 
 * **Blocked WAN-to-LAN ICMP Ping Test:** Executed an ICMP echo request from the external WAN interface toward an internal LAN test host, resulting in `100% packet loss` (Request timed out). The captured command output is recorded in [`outputs/wan-to-lan-blocked.txt`](outputs/wan-to-lan-blocked.txt).
 * **Packet Capture & Firewall Logs:** Verified via Wireshark and the firewall live view that unsolicited ingress packets on the WAN interface were dropped immediately without establishing any LAN state or session.
 
+Task 3: IPsec VPN Tunnel and Handover
 
 Aanchal Boutique — Site-to-Site IPsec VPN & Network Security Handover
 1. Executive Summary & Project Overview
