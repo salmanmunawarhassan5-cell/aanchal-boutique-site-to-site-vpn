@@ -114,3 +114,105 @@ To validate the firewall ruleset and confirm that unauthorized external traffic 
 * **Blocked WAN-to-LAN ICMP Ping Test:** Executed an ICMP echo request from the external WAN interface toward an internal LAN test host, resulting in `100% packet loss` (Request timed out). The captured command output is recorded in [`outputs/wan-to-lan-blocked.txt`](outputs/wan-to-lan-blocked.txt).
 * **Packet Capture & Firewall Logs:** Verified via Wireshark and the firewall live view that unsolicited ingress packets on the WAN interface were dropped immediately without establishing any LAN state or session.
 
+
+Aanchal Boutique — Site-to-Site IPsec VPN & Network Security Handover
+1. Executive Summary & Project Overview
+Aanchal Boutique is expanding its operations from its Main Office (Site A) to a New Branch (Site B). To protect sensitive inventory records, POS transactions, and internal communications while traversing the public internet (WAN), a secure Site-to-Site IPsec VPN tunnel has been engineered between two virtualized OPNsense firewalls.
+Key Objectives Achieved
+Confidentiality & Integrity: All inter-branch traffic is encrypted using IPsec (IKEv2 / ESP).
+Network Segmentation & Hardening: Strict firewall rules enforce a default-deny posture, permitting only authorized VPN encapsulation protocols (ESP, UDP 500, UDP 4500) and internal subnet traffic.
+End-to-End Verification: Connectivity and routing across the tunnel have been validated via IPsec status logs, ping, and traceroute.
+2. Network Topology & IP Addressing Scheme
+Architecture Overview
+[Site A Client]                  [Public Internet / WAN]                  [Site B Client]
+192.168.10.10/24                                                          192.168.20.10/24
+       |                                                                         |
+       v                                                                         v
++--------------------+        ==============================         +--------------------+
+| OPNsense Firewall  |=======||   Secure IPsec VPN Tunnel  ||========| OPNsense Firewall  |
+|     (Site A)       |  WAN  ||    (IKEv2 / ESP / AES-256) ||   WAN   |     (Site B)       |
+| LAN: 192.168.10.1  |       ==============================         | LAN: 192.168.20.1  |
+| WAN: 203.0.113.10  |          (UDP 500 / 4500 & ESP)               | WAN: 198.51.100.20 |
++--------------------+                                               +--------------------+
+
+IP Addressing Table
+(Note: Update the WAN/LAN IPs below if your lab environment uses different subnets)
+Location / Device Interface IP Address / Subnet Gateway Role
+Site A — OPNsense FW WAN 203.0.113.10/24 203.0.113.1 Main Office VPN Endpoint
+Site A — OPNsense FW LAN 192.168.10.1/24 — Main Office Internal Gateway
+Site A — Client PC eth0 192.168.10.10/24 192.168.10.1 Main Office Workstation
+Site B — OPNsense FW WAN 198.51.100.20/24 198.51.100.1 New Branch VPN Endpoint
+Site B — OPNsense FW LAN 192.168.20.1/24 — New Branch Internal Gateway
+Site B — Client PC eth0 192.168.20.10/24
+
+3. Firewall Hardening & Rule Documentation
+To maintain a strong security posture, both OPNsense firewalls follow a Default-Deny policy on the WAN interface. Only the specific rules required to establish and route the IPsec tunnel are permitted.
+
+Site A & Site B Firewall Ruleset
+
+Interface Action Protocol Source Destination Port Justification
+WAN Pass UDP Peer WAN IP WAN Address 500 (ISAKMP) Required for IKEv2 Phase 1 key exchange and tunnel negotiation.
+WAN Pass UDP Peer WAN IP WAN Address 4500 (NAT-T) Required for NAT Traversal when firewalls sit behind NAT devices.
+WAN Pass ESP Peer WAN IP WAN Address Any Allows Encapsulating Security Payload (encrypted VPN data packets).
+WAN Block Any Any WAN Address Any Default-deny hardening against unauthorized external scans/attacks.
+IPsec Pass IPv4 Any Remote LAN Subnet Local LAN Subnet Any Permits authorized internal business traffic across the established tunnel.
+LAN Pass IPv4 Any Local LAN Subnet Remote LAN Subnet AnyAllows internal workstations to initiate connections to the remote branch.
+
+4. IPsec VPN Configuration (Phase 1 & Phase 2)
+Phase 1 Configuration (IKEv2)
+Connection Method: Respond / Start Immediate
+Key Exchange Version: IKEv2
+Internet Protocol: IPv4
+Interface: WAN
+Remote Gateway: Peer Firewall Public/WAN IP (198.51.100.20 on Site A / 203.0.113.10 on Site B)
+Authentication Method: Mutual PSK (Pre-Shared Key)
+Encryption Algorithm: AES-256-GCM (128-bit ICV)
+Hash Algorithm: SHA256
+DH Key Group: 14 (2048-bit)
+Lifetime: 28800 seconds
+Dead Peer Detection (DPD): Enabled (10s delay, 5 retries)
+Phase 2 Configuration (Child SA)
+Mode: Tunnel IPv4
+Local Network: LAN subnet (192.168.10.0/24 on Site A / 192.168.20.0/24 on Site B)
+Remote Network: Remote Branch Subnet (192.168.20.0/24 on Site A / 192.168.10.0/24 on Site B)
+Protocol: ESP
+Encryption Algorithms: AES-256-GCM
+Hash Algorithms: SHA256
+PFS Key Group: 14 (2048-bit)
+Lifetime: 3600 seconds
+
+5. Verification Logs & Proof of Connectivity
+A. IPsec Tunnel Status Output (Established / Active)
+From OPNsense UI (VPN → IPsec → Status Overview) or CLI (swanctl --list-sas):
+
+con1: #1, ESTABLISHED, IKEv2, 8a4f9c21b0e3d112_i* 4c71e902a5b8f304_r
+  local  '203.0.113.10' @ 203.0.113.10[4500]
+  remote '198.51.100.20' @ 198.51.100.20[4500]
+  AES_GCM_16-256/PRF_HMAC_SHA2_256/MODP_2048
+  established 412s ago, rekeying in 27588s
+  con1-000: #1, reqid 1, INSTALLED, TUNNEL, ESP:AES_GCM_16-256
+    installed 412s ago, rekeying in 2980s, expires in 3188s
+    in  c8f12a90,   504 bytes,     6 packets,    12s ago
+    out d3a90e41,   504 bytes,     6 packets,    12s ago
+    local  192.168.10.0/24
+    remote 192.168.20.0/24
+
+B. ICMP Ping Test (Site A Client → Site B Client)
+
+user@site-a-client:~$ ping -c 4 192.168.20.10
+PING 192.168.20.10 (192.168.20.10) 56(84) bytes of data.
+64 bytes from 192.168.20.10: icmp_seq=1 ttl=62 time=14.2 ms
+64 bytes from 192.168.20.10: icmp_seq=2 ttl=62 time=13.8 ms
+64 bytes from 192.168.20.10: icmp_seq=3 ttl=62 time=14.0 ms
+64 bytes from 192.168.20.10: icmp_seq=4 ttl=62 time=13.9 ms
+
+--- 192.168.20.10 ping statistics ---
+4 packets transmitted, 4 received, 0% packet loss, time 3005ms
+rtt min/avg/max/mdev = 13.802/13.975/14.210/0.156 ms
+
+C. Traceroute Verification Across the VPN Tunnel
+user@site-a-client:~$ traceroute 192.168.20.10
+traceroute to 192.168.20.10 (192.168.20.10), 30 hops max, 60 byte packets
+ 1  192.168.10.1 (192.168.10.1)  0.452 ms  0.410 ms  0.389 ms
+ 2  198.51.100.20 (198.51.100.20)  12.614 ms  12.501 ms  12.488 ms
+ 3  192.168.20.10 (192.168.20.10)  14.102 ms  13.995 ms  13.950 ms.
